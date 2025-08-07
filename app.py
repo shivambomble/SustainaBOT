@@ -8,6 +8,15 @@ from models.llm import get_llm
 import streamlit as st
 from PIL import Image
 
+with st.sidebar:
+    st.title("🌍 SustainaBOT Menu")
+    
+    st.markdown("---")
+    st.markdown("📘 **About**")
+    st.caption("SustainaBOT helps answer questions about sustainability using RAG + Web search + LLM.")
+
+    st.markdown("🔗 [GitHub Repo](https://github.com/shivambomble/SustainaBOT)")  # optional
+
 SUSTAINABILITY_TIPS = [
     "🌿 Tip: Turn off lights and appliances when not in use to reduce energy consumption.",
     "💧 Tip: Fix leaky faucets – one drip per second wastes over 3,000 gallons/year.",
