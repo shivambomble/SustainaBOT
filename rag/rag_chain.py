@@ -42,13 +42,14 @@ Using the context provided, generate a **structured and comprehensive response**
 3. **Conclusion**: Summarize the key takeaway or implication based on the above analysis.
 
 Be precise, informative, and maintain a professional tone. Avoid redundancy and do not assume any information not found in the context.
+If the context doesn't contain information relevant to the question, respond with 'I don't know based on the provided context.'
 
 Context:
 {context}
 
 Question: {question}
 """
-        chain_type = "map_reduce"
+        chain_type = "stuff"  # Change from "map_reduce" to "stuff"
     else:
         template = """
 You are SustainaBOT, an expert in sustainable energy and carbon emissions.
@@ -76,5 +77,8 @@ Question: {question}
         return_source_documents=True,
         chain_type_kwargs={"prompt": prompt}
     )
+
+    # Add this to both templates
+    """If the context doesn't contain information relevant to the question, respond with 'I don't know based on the provided context.'"""
 
     return rag_chain

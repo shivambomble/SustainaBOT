@@ -7,8 +7,9 @@ SustainaBOT is an AI-powered assistant designed to answer questions about sustai
 - **Hybrid Knowledge System**: Combines document-based knowledge with real-time web search
 - **RAG Architecture**: Uses sustainability reports from major companies as a knowledge base
 - **Web Search Fallback**: Automatically falls back to web search when the knowledge base doesn't have an answer
+- **Renewable Energy News**: Daily updated top 5 news about renewable energy developments
 - **Email Functionality**: Send responses directly to teammates or colleagues
-- **Streamlit UI**: User-friendly interface for interacting with the assistant
+- **Streamlit UI**: User-friendly interface with a landing page for multiple features
 - **Daily Sustainability Tips**: Provides daily tips for sustainable living
 - **Response Modes**: Choose between concise or detailed responses
 
@@ -27,7 +28,9 @@ SustainaBOT is built with a modular architecture:
    - Response formatting and cleaning
 
 3. **User Interface**:
-   - Streamlit-based web application
+   - Streamlit-based web application with landing page
+   - News section with clickable source links
+   - Chat interface for sustainability Q&A
    - Email functionality for sharing results
 
 4. **Models**:
@@ -78,12 +81,26 @@ SustainaBOT is built with a modular architecture:
 
 ## Usage
 
-### Web Interface
+### Landing Page
+
+The application now features a landing page with two main options:
+
+1. **Renewable Energy News**: View the top 5 latest news about renewable energy with links to original sources
+2. **Chat with SustainaBOT**: Access the Q&A functionality for sustainability questions
+
+### Chat Interface
 
 1. Enter your sustainability-related question in the text input field
 2. Select your preferred response style (Concise or Detailed)
 3. Click "Get Answer" to generate a response
 4. Optionally, send the response via email to a colleague
+
+### News Section
+
+1. View the top 5 latest news about renewable energy
+2. Each news item includes a headline, summary, and date when available
+3. Click on "Read more" links to access the original news sources
+4. Refresh the news with the "Refresh News" button
 
 ### Email Agent
 
