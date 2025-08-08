@@ -49,7 +49,7 @@ Context:
 
 Question: {question}
 """
-        chain_type = "stuff"  # Change from "map_reduce" to "stuff"
+        chain_type = "stuff"  # Using stuff chain type for detailed mode
     else:
         template = """
 You are SustainaBOT, an expert in sustainable energy and carbon emissions.
@@ -58,12 +58,14 @@ Using the context provided, give a **brief and concise** answer to the question.
 Include only the essential points and avoid unnecessary elaboration. 
 Your goal is to communicate efficiently without missing key insights.
 
+If the context doesn't contain information relevant to the question, respond with 'I don't know based on the provided context.'
+
 Context:
 {context}
 
 Question: {question}
 """
-        chain_type = "stuff"
+        chain_type = "stuff"  # Using stuff chain type for concise mode
 
     prompt = PromptTemplate(
         input_variables=["context", "question"],
@@ -77,8 +79,5 @@ Question: {question}
         return_source_documents=True,
         chain_type_kwargs={"prompt": prompt}
     )
-
-    # Add this to both templates
-    """If the context doesn't contain information relevant to the question, respond with 'I don't know based on the provided context.'"""
 
     return rag_chain
