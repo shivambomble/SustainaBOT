@@ -8,17 +8,35 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Function to get configuration from environment or Streamlit secrets
+def get_config_value(key, default_value):
+    """Get configuration value from environment variables or Streamlit secrets"""
+    # First try environment variables
+    value = os.getenv(key)
+    if value and value != default_value:
+        return value
+    
+    # Then try Streamlit secrets (for cloud deployment)
+    try:
+        import streamlit as st
+        if hasattr(st, 'secrets') and key in st.secrets:
+            return st.secrets[key]
+    except:
+        pass
+    
+    return default_value
+
 # Groq API Configuration
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your_groq_api_key_here")
+GROQ_API_KEY = get_config_value("GROQ_API_KEY", "your_groq_api_key_here")
 
 # Email Configuration
 SMTP_CONFIG = {
-    "EMAIL": os.getenv("SMTP_EMAIL", "your_email@gmail.com"),
-    "PASSWORD": os.getenv("SMTP_PASSWORD", "your_app_password_here")
+    "EMAIL": get_config_value("SMTP_EMAIL", "your_email@gmail.com"),
+    "PASSWORD": get_config_value("SMTP_PASSWORD", "your_app_password_here")
 }
 
 # Tavily Search API Configuration
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "your_tavily_api_key_here")
+TAVILY_API_KEY = get_config_value("TAVILY_API_KEY", "your_tavily_api_key_here")
 
 # Validate that all required API keys are present
 def validate_config():

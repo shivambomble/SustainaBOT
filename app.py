@@ -1,6 +1,7 @@
 import streamlit as st
 import datetime
 import re
+import sys
 from rag.rag_chain import build_rag_chain
 from utils.email_sender import send_email
 from utils.news_export import export_news_to_json, export_news_to_markdown, create_news_digest_email
@@ -662,6 +663,29 @@ def show_news_page():
     if st.checkbox("🔧 Show Diagnostics", value=False):
         st.markdown("**API Diagnostics:**")
         
+        # Show environment info
+        st.markdown("**Environment Information:**")
+        st.write(f"- Python version: {sys.version}")
+        st.write(f"- Streamlit running locally: {'Yes' if 'localhost' in st.get_option('browser.serverAddress') or '127.0.0.1' in st.get_option('browser.serverAddress') else 'No (Cloud deployment)'}")
+        
+        # API Key diagnostics
+        tavily_key_status = "✅ Set" if TAVILY_API_KEY and TAVILY_API_KEY != 'your_tavily_api_key_here' else "❌ Not configured"
+        st.markdown(f"**Tavily API Key Status:** {tavily_key_status}")
+        
+        if TAVILY_API_KEY and TAVILY_API_KEY != 'your_tavily_api_key_here':
+            st.write(f"- Key length: {len(TAVILY_API_KEY)} characters")
+            st.write(f"- Key starts with: {TAVILY_API_KEY[:8]}...")
+        else:
+            st.error("🔑 Tavily API key is not properly configured!")
+            st.markdown("""
+            **To fix this on Streamlit Cloud:**
+            1. Go to your app settings on Streamlit Cloud
+            2. Add environment variables in the 'Secrets' section:
+            ```
+            TAVILY_API_KEY = "your_actual_api_key_here"
+            ```
+            """)
+        
         if st.button("Test Tavily Connection"):
             with st.spinner("Testing Tavily API..."):
                 is_working, result = test_tavily_connection()
@@ -671,10 +695,24 @@ def show_news_page():
                     st.write(f"Result type: {type(result)}")
                     if isinstance(result, list) and len(result) > 0:
                         st.write(f"First result keys: {list(result[0].keys()) if isinstance(result[0], dict) else 'Not a dict'}")
+                        st.write(f"Number of results: {len(result)}")
+                    elif isinstance(result, dict):
+                        st.write(f"Result keys: {list(result.keys())}")
                 else:
                     st.error(f"❌ Tavily API Error: {result}")
+                    if "authentication" in str(result).lower() or "api key" in str(result).lower():
+                        st.warning("This looks like an API key authentication issue!")
         
-        st.markdown(f"**Current API Key Status:** {'✅ Set' if TAVILY_API_KEY and TAVILY_API_KEY != 'your_tavily_api_key_here' else '❌ Not configured'}")
+        # Environment variables check
+        st.markdown("**Environment Variables Check:**")
+        import os
+        env_vars = ['TAVILY_API_KEY', 'GROQ_API_KEY', 'SMTP_EMAIL', 'SMTP_PASSWORD']
+        for var in env_vars:
+            value = os.getenv(var)
+            if value and value != f'your_{var.lower()}_here':
+                st.write(f"✅ {var}: Set ({len(value)} chars)")
+            else:
+                st.write(f"❌ {var}: Not set or using default value")
     
     # Initialize session state for news caching
     cache_key = f"news_{category}_{num_articles}"
