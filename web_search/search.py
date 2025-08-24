@@ -1,5 +1,5 @@
 from langchain_community.tools.tavily_search.tool import TavilySearchResults
-from config.config import TAVILY_API_KEY, GROQ_API_KEY
+from config.config_template import TAVILY_API_KEY, GROQ_API_KEY
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 import sys

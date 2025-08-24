@@ -8,7 +8,7 @@ from web_search.search import search_web
 from models.llm import get_llm
 from PIL import Image
 from langchain_community.tools.tavily_search.tool import TavilySearchResults
-from config.config import TAVILY_API_KEY
+from config.config_template import TAVILY_API_KEY
 
 # Set page config at the very beginning
 st.set_page_config(page_title="Sustainabot 🌱", page_icon="🌍")

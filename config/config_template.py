@@ -42,6 +42,11 @@ def validate_config():
     
     return True
 
-# Validate configuration on import
+# Validate configuration on import (with graceful handling for development)
 if __name__ != "__main__":
-    validate_config()
+    try:
+        validate_config()
+    except ValueError as e:
+        print(f"⚠️  Configuration Warning: {e}")
+        print("💡 Please check your .env file and ensure all required API keys are set.")
+        print("📖 Refer to SETUP.md for configuration instructions.")
