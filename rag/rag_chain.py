@@ -5,7 +5,7 @@ from rag.splitter import split_documents
 from rag.vector_store import create_vector_store, load_vector_store
 from langchain_core.vectorstores import VectorStore
 
-def build_rag_chain(documents=None, response_mode="concise", persist_path="vector_db/") -> RetrievalQA:
+def build_rag_chain(documents=None, response_mode="concise", persist_path="vector_db/"):
     """
     Builds and returns a RetrievalQA chain using a retriever and LLM.
     Supports 'concise' and 'detailed' response modes.
@@ -16,17 +16,47 @@ def build_rag_chain(documents=None, response_mode="concise", persist_path="vecto
         persist_path (str): Path where vector store is or should be persisted.
 
     Returns:
-        RetrievalQA: A configured RetrievalQA chain.
+        RetrievalQA or None: A configured RetrievalQA chain, or None if vector store cannot be created.
     """
 
-    # Load or create vector store
+    # Load or create vector store with better error handling
+    vector_store = None
     try:
         vector_store: VectorStore = load_vector_store(persist_path)
-    except Exception:
-        if documents is None:
-            raise ValueError("No documents provided to create vector store.")
-        split_docs = split_documents(documents)
-        vector_store: VectorStore = create_vector_store(split_docs, persist_path)
+        print(f"✅ Successfully loaded vector store from {persist_path}")
+    except Exception as e:
+        print(f"⚠️ Failed to load vector store: {str(e)}")
+        
+        # Try to build vector store from documents if available
+        if documents is not None:
+            try:
+                print("🔄 Creating new vector store from provided documents...")
+                split_docs = split_documents(documents)
+                vector_store: VectorStore = create_vector_store(split_docs, persist_path)
+                print("✅ Successfully created new vector store")
+            except Exception as create_error:
+                print(f"❌ Failed to create vector store: {str(create_error)}")
+                return None
+        else:
+            # Try to load documents and create vector store
+            try:
+                print("🔄 Attempting to load documents and create vector store...")
+                from rag.loader import load_documents
+                documents = load_documents()
+                if documents:
+                    split_docs = split_documents(documents)
+                    vector_store: VectorStore = create_vector_store(split_docs, persist_path)
+                    print("✅ Successfully created vector store from loaded documents")
+                else:
+                    print("❌ No documents found to create vector store")
+                    return None
+            except Exception as fallback_error:
+                print(f"❌ Fallback document loading failed: {str(fallback_error)}")
+                return None
+    
+    if vector_store is None:
+        print("❌ Failed to initialize vector store")
+        return None
 
     retriever = vector_store.as_retriever()
     llm = get_llm()

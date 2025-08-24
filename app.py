@@ -183,31 +183,52 @@ I'm specifically designed to help with sustainability, environmental, and energy
 **Please ask me something related to sustainability, environment, or energy topics!**
 """
     
-    # Convert response_mode to lowercase to match expected values in build_rag_chain
-    rag_chain = build_rag_chain(response_mode=response_mode.lower())
     llm = get_llm()
-
-    response = rag_chain.invoke({"query": query})
-    result = response.get("result", "")
+    result = ""
     
-    # Enhanced fallback detection
-    fallback_phrases = [
-        "i don't know", 
-        "not mention", 
-        "out of context", 
-        "cannot answer", 
-        "no information",
-        "this context is about",  # Catches "This context is about Boeing, not Tesla"
-        "the question seems to be out of context"
-    ]
-    
-    should_fallback = not result or any(phrase in result.lower() for phrase in fallback_phrases)
-    
-    if should_fallback:
-        st.info("RAG did not return a confident answer. Falling back to live web search...")
-        raw_snippets = search_web(query)
-
-        summary_prompt = f"""
+    # Try RAG first, with fallback to web search
+    try:
+        # Convert response_mode to lowercase to match expected values in build_rag_chain
+        rag_chain = build_rag_chain(response_mode=response_mode.lower())
+        
+        # Check if RAG chain was successfully built
+        if rag_chain is None:
+            print("⚠️ RAG chain could not be built - vector store unavailable")
+            raise ValueError("Vector store unavailable, falling back to web search")
+        
+        response = rag_chain.invoke({"query": query})
+        result = response.get("result", "")
+        print("✅ RAG response generated successfully")
+        
+        # Enhanced fallback detection
+        fallback_phrases = [
+            "i don't know", 
+            "not mention", 
+            "out of context", 
+            "cannot answer", 
+            "no information",
+            "this context is about",  # Catches "This context is about Boeing, not Tesla"
+            "the question seems to be out of context"
+        ]
+        
+        should_fallback = not result or any(phrase in result.lower() for phrase in fallback_phrases)
+        
+        if should_fallback:
+            raise ValueError("RAG response not meaningful, falling back to web search")
+            
+    except Exception as rag_error:
+        print(f"⚠️ RAG failed: {str(rag_error)}")
+        
+        # Show user-friendly message for vector store issues
+        if "vector store" in str(rag_error).lower() or "no documents" in str(rag_error).lower():
+            st.info("📚 Knowledge base is being initialized. Using web search for your query...")
+        else:
+            st.info("RAG did not return a confident answer. Falling back to live web search...")
+        
+        # Fall back to web search
+        try:
+            raw_snippets = search_web(query)
+            summary_prompt = f"""
 You are SustainaBOT, an AI assistant specialized in sustainability, environmental issues, and renewable energy. {"Summarize the following web search results into a short and clear paragraph" if response_mode == "Concise" else "Provide a detailed and structured explanation"} answering the sustainability/environmental query: '{query}'.
 
 Focus only on sustainability, environmental, and energy-related aspects. If the search results don't contain relevant sustainability information, politely redirect the user to ask sustainability-related questions.
@@ -215,7 +236,11 @@ Focus only on sustainability, environmental, and energy-related aspects. If the 
 Search Results:
 {raw_snippets}
 """
-        result = llm.invoke(summary_prompt).content
+            result = llm.invoke(summary_prompt).content
+            print("✅ Web search fallback successful")
+        except Exception as web_error:
+            print(f"❌ Web search also failed: {str(web_error)}")
+            return f"I apologize, but I'm unable to process your query at the moment due to technical issues. Please try again later."
 
     return clean_markdown(result.strip())
 
