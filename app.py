@@ -218,6 +218,15 @@ Search Results:
 
     return clean_markdown(result.strip())
 
+def test_tavily_connection():
+    """Test if Tavily API is working correctly"""
+    try:
+        tool = TavilySearchResults(tavily_api_key=TAVILY_API_KEY)
+        test_results = tool.invoke({"query": "renewable energy"})
+        return True, test_results
+    except Exception as e:
+        return False, str(e)
+
 def get_renewable_energy_news(category="general", num_articles=5):
     """Fetch renewable energy news with category filtering"""
     
@@ -242,15 +251,52 @@ def get_renewable_energy_news(category="general", num_articles=5):
             tool = TavilySearchResults(tavily_api_key=TAVILY_API_KEY)
             search_results = tool.invoke({"query": query})
             
-            # Extract URLs and contents
+            # Debug: Log the type and structure of search results (remove in production)
+            # st.write(f"Debug: Search results type: {type(search_results)}")
+            # st.write(f"Debug: Search results length: {len(search_results) if hasattr(search_results, '__len__') else 'N/A'}")
+            
+            # Validate and normalize search results structure
+            if not search_results:
+                raise ValueError("No search results returned")
+            
+            # Handle different possible return formats
+            if isinstance(search_results, dict):
+                # If it's a dict, look for common keys that might contain the results
+                if "results" in search_results:
+                    search_results = search_results["results"]
+                elif "data" in search_results:
+                    search_results = search_results["data"]
+                else:
+                    # Convert single result dict to list
+                    search_results = [search_results]
+            
+            if not isinstance(search_results, list):
+                raise ValueError("Invalid search results format")
+            
+            # Extract URLs and contents with proper validation
             news_data = []
             for i, res in enumerate(search_results[:num_articles]):
-                news_data.append({
-                    "content": res["content"],
-                    "url": res["url"],
-                    "title": res.get("title", f"News {i+1}"),
-                    "category": category
-                })
+                # Ensure res is a dictionary and has required fields
+                if not isinstance(res, dict):
+                    continue
+                
+                # Extract data with fallbacks
+                content = res.get("content", "No content available")
+                url = res.get("url", "#")
+                title = res.get("title", f"News Article {i+1}")
+                
+                # Only add if we have meaningful content
+                if content and content != "No content available" and url != "#":
+                    news_data.append({
+                        "content": content,
+                        "url": url,
+                        "title": title,
+                        "category": category
+                    })
+            
+            # Check if we got any valid news data
+            if not news_data:
+                raise ValueError("No valid news articles found")
             
             # Format the data for the LLM
             formatted_data = "\n\n".join([f"Title: {item['title']}\nContent: {item['content']}\nURL: {item['url']}" for item in news_data])
@@ -279,8 +325,21 @@ Search Results:
             return news_content, news_data
             
         except Exception as e:
-            st.error(f"Error fetching news: {str(e)}")
-            return "Unable to fetch news at this time.", []
+            error_msg = str(e)
+            
+            # Provide more specific error messages
+            if "string indices must be integers" in error_msg:
+                st.error("🔧 API response format issue. The news service returned unexpected data format.")
+            elif "No valid news articles found" in error_msg:
+                st.warning("📰 No news articles found for this category. Try refreshing or selecting a different category.")
+            elif "Invalid search results format" in error_msg:
+                st.error("🌐 Search service returned invalid data. Please try again in a moment.")
+            elif "tavily" in error_msg.lower():
+                st.error("🔑 News search service issue. Please check your API configuration.")
+            else:
+                st.error(f"❌ Error fetching news: {error_msg}")
+            
+            return "Unable to fetch news at this time. Please try again later.", []
 
 def get_news_summary_stats(news_data):
     """Generate summary statistics for news data"""
@@ -598,6 +657,24 @@ def show_news_page():
     
     with col_refresh:
         refresh_clicked = st.button("🔄 Refresh News")
+    
+    # Add diagnostic section (can be removed in production)
+    if st.checkbox("🔧 Show Diagnostics", value=False):
+        st.markdown("**API Diagnostics:**")
+        
+        if st.button("Test Tavily Connection"):
+            with st.spinner("Testing Tavily API..."):
+                is_working, result = test_tavily_connection()
+                
+                if is_working:
+                    st.success("✅ Tavily API is working correctly")
+                    st.write(f"Result type: {type(result)}")
+                    if isinstance(result, list) and len(result) > 0:
+                        st.write(f"First result keys: {list(result[0].keys()) if isinstance(result[0], dict) else 'Not a dict'}")
+                else:
+                    st.error(f"❌ Tavily API Error: {result}")
+        
+        st.markdown(f"**Current API Key Status:** {'✅ Set' if TAVILY_API_KEY and TAVILY_API_KEY != 'your_tavily_api_key_here' else '❌ Not configured'}")
     
     # Initialize session state for news caching
     cache_key = f"news_{category}_{num_articles}"
