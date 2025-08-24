@@ -1,6 +1,6 @@
 import os
 
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "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"
 
 SMTP_CONFIG = {
     "EMAIL": "shibostats@gmail.com",          
